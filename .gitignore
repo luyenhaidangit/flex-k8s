@@ -1,0 +1,18 @@
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Secrets and kubeconfig
+*.kubeconfig
+kubeconfig*
+.secrets/
+
+# Claude Code personal settings
+.claude/settings.local.json
+
+# OS and editor noise
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
