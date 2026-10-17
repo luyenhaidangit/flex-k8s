@@ -20,5 +20,5 @@ docs/                # Tài liệu setup và vận hành
 
 ## Việc cần quyết định tiếp
 
-- Cluster local: Docker Desktop / kind / minikube / k3d.
+- Cluster local: dùng minikube cho khớp tài liệu `../docs/infrastructure/k8s-level-1.md`; chưa chốt có chuyển manifest `../flex-environment/k8s/` sang repo này hay không.
 - Danh sách workload cần đưa lên K8s (xem `../flex-environment/docker-compose.*.yml`).
