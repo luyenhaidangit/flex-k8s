@@ -8,7 +8,8 @@ Cấu hình môi trường Kubernetes cho Flex platform. Repo này chỉ chứa 
 
 ```bash
 bash scripts/install-minikube.sh            # cài kubectl + minikube (không tự tạo cluster)
-minikube start --driver=docker              # cần Docker đã chạy
+bash scripts/create-cluster.sh              # tạo cluster minikube; nếu đã có cluster thì liệt kê và hỏi có tạo thêm không
+CLUSTER_NAME=lab bash scripts/create-cluster.sh   # không hỏi, tạo (hoặc start lại) cluster tên "lab"
 ```
 
 ## Chạy thử nginx (local)
