@@ -4,6 +4,13 @@ Cấu hình môi trường Kubernetes cho Flex platform. Repo này chỉ chứa 
 
 > Trạng thái: mới khởi tạo khung dự án. Đã có manifest `manifests/nginx.yaml` (Deployment + Service ClusterIP) để học k8s, chưa apply lên cluster nào.
 
+## Cài công cụ (Ubuntu/WSL2)
+
+```bash
+bash scripts/install-minikube.sh            # cài kubectl + minikube (không tự tạo cluster)
+minikube start --driver=docker              # cần Docker đã chạy
+```
+
 ## Chạy thử nginx (local)
 
 ```bash
