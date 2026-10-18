@@ -12,6 +12,15 @@ bash scripts/create-cluster.sh              # tạo cluster minikube; nếu đã
 CLUSTER_NAME=lab bash scripts/create-cluster.sh   # không hỏi, tạo (hoặc start lại) cluster tên "lab"
 ```
 
+## Xem nhanh thông tin cluster
+
+```bash
+bash scripts/cluster-info.sh                # cluster, node, namespace, deployment/pod/service của namespace hiện tại
+bash scripts/cluster-info.sh -A             # workload ở mọi namespace (hoặc truyền tên namespace)
+```
+
+Chỉ đọc, không thay đổi cluster.
+
 ## Chạy thử nginx (local)
 
 ```bash
