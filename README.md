@@ -2,7 +2,17 @@
 
 Cấu hình môi trường Kubernetes cho Flex platform. Repo này chỉ chứa manifest YAML thuần (không dùng Kustomize/Helm) và script vận hành; mã nguồn service nằm ở các repo riêng.
 
-> Trạng thái: mới khởi tạo khung dự án, chưa triển khai workload nào.
+> Trạng thái: mới khởi tạo khung dự án. Đã có manifest `manifests/nginx.yaml` (Deployment + Service ClusterIP) để học k8s, chưa apply lên cluster nào.
+
+## Chạy thử nginx (local)
+
+```bash
+kubectl apply -f manifests/nginx.yaml
+kubectl get pods,svc -l app=nginx
+kubectl port-forward svc/nginx 8080:80      # mở http://localhost:8080
+```
+
+Rollback: `kubectl rollout undo deployment/nginx`. Dọn dẹp: `kubectl delete -f manifests/nginx.yaml`.
 
 ## Cấu trúc
 
