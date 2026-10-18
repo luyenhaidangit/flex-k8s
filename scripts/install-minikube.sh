@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Cài đặt kubectl + minikube trên Ubuntu/WSL2 (amd64) để chạy Kubernetes local.
 # Cách dùng: chmod +x install-minikube.sh && ./install-minikube.sh
-# Chạy lại nhiều lần an toàn (idempotent). Không tự tạo cluster — xem docs/infrastructure/k8s-level-1.md Bước 3.
+# Chạy lại nhiều lần an toàn (idempotent). Không tự tạo cluster — chạy create-cluster.sh (hoặc xem docs/infrastructure/k8s-level-1.md Bước 3).
 
 set -euo pipefail
 
