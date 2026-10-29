@@ -1,0 +1,91 @@
+# ConfigMap: cấu hình không nhạy cảm, nạp vào container qua envFrom
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flex-api-gateway-config
+  labels:
+    app: flex-api-gateway
+data:
+  ASPNETCORE_ENVIRONMENT: "Production"
+  Logging__LogLevel__Default: "Information"
+  Logging__LogLevel__Microsoft.AspNetCore: "Warning"
+  JwtSettings__Issuer: "luyenhaidangit"
+  JwtSettings__Audience: "flex"
+---
+# Deployment: giữ N pod chạy, tự tạo lại khi chết, rolling update khi đổi image
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flex-api-gateway
+  labels:
+    app: flex-api-gateway
+spec:
+  replicas: 2
+  # Tìm pod theo label; phải khớp template.metadata.labels
+  selector:
+    matchLabels:
+      app: flex-api-gateway
+  template:
+    metadata:
+      labels:
+        app: flex-api-gateway
+    spec:
+      containers:
+        - name: flex-api-gateway
+          image: luyenhaidangit/flex-api-gateway:1.0.1-dev # ghim version, không dùng latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: flex-api-gateway-config
+            # Secret KHÔNG nằm trong repo; tạo lúc deploy:
+            # kubectl create secret generic flex-api-gateway-secret --from-literal=<KEY>=<VALUE>
+            - secretRef:
+                name: flex-api-gateway-secret
+          resources:
+            requests: # đảm bảo, dùng để chọn node
+              cpu: "100m"
+              memory: "128Mi"
+            limits: # trần: vượt memory -> OOMKilled
+              memory: "512Mi"
+          # Startup: chờ app khởi động xong mới bật liveness/readiness
+          startupProbe:
+            httpGet:
+              path: /health/live
+              port: 8080
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 24 # tối đa ~120s để khởi động
+          # Readiness: lỗi -> loại khỏi Service (không restart)
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8080
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3 # ~15s fail liên tục mới rút khỏi Service
+            successThreshold: 1
+          # Liveness: lỗi -> restart container
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8080
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3 # ~30s treo mới restart
+---
+# Service: địa chỉ ổn định + cân bằng tải cho các pod
+apiVersion: v1
+kind: Service
+metadata:
+  name: flex-api-gateway
+  labels:
+    app: flex-api-gateway
+spec:
+  type: ClusterIP # chỉ trong cluster; từ máy dùng kubectl port-forward
+  selector: # chọn pod theo label; lệch label -> Endpoints trống
+    app: flex-api-gateway
+  ports:
+    - port: 80 # port của Service
+      targetPort: 8080 # port của container

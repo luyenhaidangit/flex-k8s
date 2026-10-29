@@ -47,5 +47,5 @@ docs/                # Tài liệu setup và vận hành
 
 ## Việc cần quyết định tiếp
 
-- Cluster local: dùng minikube cho khớp tài liệu `../docs/infrastructure/k8s-level-1.md`; chưa chốt có chuyển manifest `../flex-environment/k8s/` sang repo này hay không.
+- Cluster local: dùng minikube cho khớp tài liệu `../docs/infrastructure/k8s-level-1.md`. Manifest `flex-api-gateway.yaml` đã chuyển từ `flex-environment/k8s/` sang `manifests/`; cần tạo Secret `flex-api-gateway-secret` lúc deploy (không commit).
 - Danh sách workload cần đưa lên K8s (xem `../flex-environment/docker-compose.*.yml`).
