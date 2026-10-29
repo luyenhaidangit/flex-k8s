@@ -9,6 +9,18 @@ Cấu hình môi trường Kubernetes cho Flex platform. Repo này chỉ chứa 
 ```bash
 bash scripts/server/bootstrap.sh            # kiểm tra và cài phần còn thiếu (systemd, user, Docker, kubectl, minikube)
 bash scripts/server/bootstrap.sh --check    # chỉ kiểm tra, không thay đổi
+```
+
+Trên Windows (PowerShell), cho WSL2 dùng chung card mạng với Windows (`networkingMode=mirrored`):
+
+```powershell
+powershell -File scripts\server\configure-wsl-network.ps1           # kiểm tra, thiếu thì ghi vào %USERPROFILE%\.wslconfig
+powershell -File scripts\server\configure-wsl-network.ps1 -Check    # chỉ kiểm tra, không thay đổi
+```
+
+Sửa xong cần `wsl --shutdown` để có hiệu lực. Các lệnh cài công cụ bên dưới chạy trong WSL.
+
+```bash
 bash scripts/install-minikube.sh            # cài kubectl + minikube (không tự tạo cluster)
 bash scripts/create-cluster.sh              # tạo cluster minikube; nếu đã có cluster thì liệt kê và hỏi có tạo thêm không
 CLUSTER_NAME=lab bash scripts/create-cluster.sh   # không hỏi, tạo (hoặc start lại) cluster tên "lab"
