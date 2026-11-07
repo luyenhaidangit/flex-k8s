@@ -36,4 +36,4 @@ kubectl version --client
 minikube version
 
 echo ">> Hoàn tất."
-echo "   Chạy 'minikube start --driver=docker' khi bạn sẵn sàng tạo cluster (cần Docker đã chạy — xem flex-environment/setup/install-docker.sh)."
+echo "   Chạy 'minikube start --driver=docker' khi bạn sẵn sàng tạo cluster (cần Docker đã chạy — xem scripts/server/bootstrap.sh)."

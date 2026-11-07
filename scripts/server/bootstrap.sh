@@ -9,7 +9,6 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-INSTALL_DOCKER="$SCRIPT_DIR/../../../flex-environment/setup/install-docker.sh"
 INSTALL_MINIKUBE="$SCRIPT_DIR/../install-minikube.sh"
 SUPPORTED_UBUNTU="22.04 24.04"
 WSL_CONF="/etc/wsl.conf"
@@ -120,12 +119,33 @@ if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
 elif [ -n "$CHECK_ONLY" ]; then
   todo "Docker chưa cài hoặc chưa chạy/chưa có quyền (xem 'docker info')"
 else
-  if command -v docker >/dev/null 2>&1; then
-    doing "Docker đã cài nhưng chưa chạy được — chạy lại install-docker.sh để bật service và gán group..."
+  if ! command -v docker >/dev/null 2>&1 || ! docker compose version >/dev/null 2>&1; then
+    doing "Cài Docker Engine + Compose..."
+    for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do
+      $SUDO apt-get remove -y "$pkg" >/dev/null 2>&1 || true
+    done
+    $SUDO apt-get update -y
+    $SUDO apt-get install -y ca-certificates curl
+    $SUDO install -m 0755 -d /etc/apt/keyrings
+    $SUDO curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+    $SUDO chmod a+r /etc/apt/keyrings/docker.asc
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu ${VERSION_CODENAME} stable" \
+      | $SUDO tee /etc/apt/sources.list.d/docker.list >/dev/null
+    $SUDO apt-get update -y
+    $SUDO apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
   else
-    doing "Cài Docker..."
+    doing "Docker đã cài nhưng chưa chạy được — bật service và gán group..."
   fi
-  bash "$INSTALL_DOCKER"
+  if [ -d /run/systemd/system ]; then
+    $SUDO systemctl enable --now docker
+  else
+    $SUDO service docker start
+  fi
+  DOCKER_USER="${SUDO_USER:-$(id -un)}"
+  if [ "$DOCKER_USER" != "root" ]; then
+    $SUDO usermod -aG docker "$DOCKER_USER"
+    echo ">> Đăng xuất/đăng nhập lại (hoặc 'newgrp docker') để dùng docker không cần sudo."
+  fi
 fi
 
 # --- 4. kubectl + minikube -----------------------------------------------

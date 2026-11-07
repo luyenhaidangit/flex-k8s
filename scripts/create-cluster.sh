@@ -10,7 +10,7 @@ set -euo pipefail
 
 for cmd in docker minikube kubectl; do
   if ! command -v "$cmd" >/dev/null 2>&1; then
-    echo "!! Thiếu '$cmd'. Cài bằng install-minikube.sh (minikube, kubectl) hoặc flex-environment/setup/install-docker.sh (docker)." >&2
+    echo "!! Thiếu '$cmd'. Cài bằng install-minikube.sh (minikube, kubectl) hoặc scripts/server/bootstrap.sh (docker)." >&2
     exit 1
   fi
 done
