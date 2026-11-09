@@ -1,15 +1,13 @@
 #!/usr/bin/env bash
-# Bootstrap máy chủ Ubuntu/WSL2 để chạy Kubernetes local: kiểm tra từng mục, thiếu mới làm.
+# Bootstrap máy Ubuntu/WSL2: kiểm tra từng mục, thiếu mới làm.
 # Cách dùng: bash bootstrap.sh            # kiểm tra và cài những gì còn thiếu
 #            bash bootstrap.sh --check    # chỉ kiểm tra, không thay đổi gì (exit 1 nếu còn thiếu)
-# Chạy lại nhiều lần an toàn (idempotent). Không tạo cluster — chạy ../create-cluster.sh sau khi bootstrap xong.
-# Các mục: OS hỗ trợ -> systemd + user mặc định (WSL2) -> Docker -> kubectl + minikube.
+# Chạy lại nhiều lần an toàn (idempotent). Không cài cluster — k3s (kèm kubectl) cài bằng flex-environment/setup/04-init-k3s.sh.
+# Các mục: OS hỗ trợ -> systemd + user mặc định (WSL2) -> Docker.
 # User mặc định WSL: script hỏi tên khi chưa có [user] default=; chạy không tương tác thì đặt WSL_DEFAULT_USER=<tên>.
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-INSTALL_MINIKUBE="$SCRIPT_DIR/../install-minikube.sh"
 SUPPORTED_UBUNTU="22.04 24.04"
 WSL_CONF="/etc/wsl.conf"
 
@@ -148,16 +146,6 @@ else
   fi
 fi
 
-# --- 4. kubectl + minikube -----------------------------------------------
-if command -v kubectl >/dev/null 2>&1 && command -v minikube >/dev/null 2>&1; then
-  ok "kubectl $(kubectl version --client -o json | grep -m1 '"gitVersion"' | cut -d'"' -f4), minikube $(minikube version --short)"
-elif [ -n "$CHECK_ONLY" ]; then
-  todo "kubectl hoặc minikube chưa cài"
-else
-  doing "Cài kubectl + minikube..."
-  bash "$INSTALL_MINIKUBE"
-fi
-
 # --- Kết quả -------------------------------------------------------------
 echo
 if [ -n "$PENDING_WSL_RESTART" ]; then
@@ -167,4 +155,4 @@ if [ -n "$CHECK_ONLY" ] && [ "$MISSING" -ne 0 ]; then
   echo ">> Còn thiếu mục ở trên. Chạy 'bash bootstrap.sh' (không --check) để cài."
   exit 1
 fi
-[ -n "$PENDING_WSL_RESTART" ] || echo ">> Sẵn sàng. Bước tiếp theo: bash ../create-cluster.sh"
+[ -n "$PENDING_WSL_RESTART" ] || echo ">> Sẵn sàng."

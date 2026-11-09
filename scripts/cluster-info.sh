@@ -10,7 +10,7 @@ set -euo pipefail
 NS_ARG="${1:-}"
 
 if ! command -v kubectl >/dev/null 2>&1; then
-  echo "!! Thiếu 'kubectl'. Cài bằng install-minikube.sh." >&2
+  echo "!! Thiếu 'kubectl'. Cài k3s (kèm kubectl) bằng flex-environment/setup/04-init-k3s.sh." >&2
   exit 1
 fi
 
@@ -21,16 +21,11 @@ section() {
 section "Cluster (kubectl context, dấu * là đang dùng)"
 kubectl config get-contexts
 
-if command -v minikube >/dev/null 2>&1; then
-  section "Minikube profile"
-  minikube profile list
-fi
-
 # Các mục dưới cần kết nối tới cluster đang dùng.
 if ! kubectl --request-timeout=5s get nodes >/dev/null 2>&1; then
   echo
   echo "!! Không kết nối được cluster hiện tại ($(kubectl config current-context 2>/dev/null || echo 'chưa chọn context'))." >&2
-  echo "   Cluster đã dừng? Thử: minikube start -p <tên>, hoặc đổi: kubectl config use-context <tên>." >&2
+  echo "   Cluster đã dừng? Thử: sudo systemctl status k3s, hoặc đổi: kubectl config use-context <tên>." >&2
   exit 1
 fi
 

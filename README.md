@@ -7,17 +7,13 @@ Cấu hình môi trường Kubernetes cho Flex platform. Repo này chỉ chứa 
 ## Cài công cụ (Ubuntu/WSL2)
 
 ```bash
-bash scripts/server/bootstrap.sh            # kiểm tra và cài phần còn thiếu (systemd, user, Docker, kubectl, minikube)
+bash scripts/server/bootstrap.sh            # kiểm tra và cài phần còn thiếu (systemd, user, Docker)
 bash scripts/server/bootstrap.sh --check    # chỉ kiểm tra, không thay đổi
 ```
 
 Cấu hình mạng WSL2 trên Windows (`networkingMode=mirrored`, `dnsTunneling=true`) do `flex-workstation` quản lý: template ở `scripts/windows/.wslconfig`, áp dụng bởi `scripts\bootstrap.ps1`, kiểm tra bằng `scripts\windows\SYNC_WINDOWS.cmd -Check` (đều ở root workstation). Sau khi áp dụng cần `wsl --shutdown` để có hiệu lực. Các lệnh cài công cụ bên dưới chạy trong WSL.
 
-```bash
-bash scripts/install-minikube.sh            # cài kubectl + minikube (không tự tạo cluster)
-bash scripts/create-cluster.sh              # tạo cluster minikube; nếu đã có cluster thì liệt kê và hỏi có tạo thêm không
-CLUSTER_NAME=lab bash scripts/create-cluster.sh   # không hỏi, tạo (hoặc start lại) cluster tên "lab"
-```
+Cluster là k3s 1 node, cài bằng `flex-environment/setup/04-init-k3s.sh` (kèm `kubectl`), không nằm trong repo này.
 
 ## Xem nhanh thông tin cluster
 
@@ -54,5 +50,5 @@ docs/                # Tài liệu setup và vận hành
 
 ## Việc cần quyết định tiếp
 
-- Cluster local: dùng minikube cho khớp tài liệu `../docs/infrastructure/k8s-level-1.md`. Manifest `flex-api-gateway.yaml` đã chuyển từ `flex-environment/k8s/` sang `manifests/`; cần tạo Secret `flex-api-gateway-secret` lúc deploy (không commit).
+- Cluster: k3s 1 node trên server (`flex-environment/setup/04-init-k3s.sh`). Manifest `flex-api-gateway.yaml` đã chuyển từ `flex-environment/k8s/` sang `manifests/`; cần tạo Secret `flex-api-gateway-secret` lúc deploy (không commit).
 - Danh sách workload cần đưa lên K8s (xem `../flex-environment/docker-compose.*.yml`).
