@@ -27,12 +27,11 @@ data:
         }
 
         # API: chuyển nguyên path tới flex-api-gateway (namespace default).
-        # Dùng biến + resolver (CoreDNS của k3s, cần tên đầy đủ) để nginx vẫn khởi động khi gateway chưa được apply;
-        # gateway chưa chạy thì /api/ trả 502 còn trang "Đang xây dựng" không bị ảnh hưởng.
+        # proxy_pass viết trực tiếp, KHÔNG dùng biến + resolver: cách đó timeout DNS trên k3s này (502 "could not be resolved").
+        # Tên Service được phân giải lúc nginx khởi động, nên phải apply Service flex-api-gateway trước nginx;
+        # ClusterIP của Service cố định nên pod gateway restart không ảnh hưởng.
         location /api/ {
-            resolver kube-dns.kube-system.svc.cluster.local valid=10s ipv6=off;
-            set $gateway_upstream http://flex-api-gateway.default.svc.cluster.local;
-            proxy_pass $gateway_upstream;
+            proxy_pass http://flex-api-gateway.default.svc.cluster.local;
             proxy_http_version 1.1;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
