@@ -26,6 +26,22 @@ data:
         }
     }
 ---
+# Service: địa chỉ ổn định + cân bằng tải cho các pod
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  labels:
+    app: nginx
+spec:
+  type: NodePort # mở cổng 30080 trên host; nginx Docker (flex-environment) proxy tới host.docker.internal:30080
+  selector: # chọn pod theo label; lệch label -> Endpoints trống
+    app: nginx
+  ports:
+    - port: 80 # port của Service
+      targetPort: 80 # port của container
+      nodePort: 30080 # cổng trên host (dải 30000-32767); không mở ra Internet
+---
 # Deployment: giữ N pod chạy, tự tạo lại khi chết, rolling update khi đổi image
 apiVersion: apps/v1
 kind: Deployment
@@ -78,19 +94,3 @@ spec:
         - name: nginx-config
           configMap:
             name: nginx-config
----
-# Service: địa chỉ ổn định + cân bằng tải cho các pod
-apiVersion: v1
-kind: Service
-metadata:
-  name: nginx
-  labels:
-    app: nginx
-spec:
-  type: NodePort # mở cổng 30080 trên host; nginx Docker (flex-environment) proxy tới host.docker.internal:30080
-  selector: # chọn pod theo label; lệch label -> Endpoints trống
-    app: nginx
-  ports:
-    - port: 80 # port của Service
-      targetPort: 80 # port của container
-      nodePort: 30080 # cổng trên host (dải 30000-32767); không mở ra Internet

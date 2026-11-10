@@ -12,6 +12,21 @@ data:
   JwtSettings__Issuer: "luyenhaidangit"
   JwtSettings__Audience: "flex"
 ---
+# Service: địa chỉ ổn định + cân bằng tải cho các pod
+apiVersion: v1
+kind: Service
+metadata:
+  name: flex-api-gateway
+  labels:
+    app: flex-api-gateway
+spec:
+  type: ClusterIP # chỉ trong cluster; từ máy dùng kubectl port-forward
+  selector: # chọn pod theo label; lệch label -> Endpoints trống
+    app: flex-api-gateway
+  ports:
+    - port: 80 # port của Service
+      targetPort: 8080 # port của container
+---
 # Deployment: giữ N pod chạy, tự tạo lại khi chết, rolling update khi đổi image
 apiVersion: apps/v1
 kind: Deployment
@@ -74,18 +89,3 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 2
             failureThreshold: 3 # ~30s treo mới restart
----
-# Service: địa chỉ ổn định + cân bằng tải cho các pod
-apiVersion: v1
-kind: Service
-metadata:
-  name: flex-api-gateway
-  labels:
-    app: flex-api-gateway
-spec:
-  type: ClusterIP # chỉ trong cluster; từ máy dùng kubectl port-forward
-  selector: # chọn pod theo label; lệch label -> Endpoints trống
-    app: flex-api-gateway
-  ports:
-    - port: 80 # port của Service
-      targetPort: 8080 # port của container
