@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Sửa file trong manifests/ rồi chạy: apply toàn bộ manifest, service nào đổi thì chạy lại đúng service đó.
 # Cách dùng:
-#   bash update.sh                      # apply mọi manifests/*.yaml
-#   bash update.sh nginx                # chỉ apply manifests/nginx.yaml
-#   bash update.sh flex-api-gateway     # chỉ apply manifests/flex-api-gateway.yaml
+#   bash restart.sh                      # apply mọi manifests/*.yaml
+#   bash restart.sh nginx                # chỉ apply manifests/nginx.yaml
+#   bash restart.sh flex-api-gateway     # chỉ apply manifests/flex-api-gateway.yaml
 # - Deployment (image, env, probe, resources...) đổi: k8s tự rolling update khi apply.
 # - ConfigMap đổi: pod không tự nạp lại, script chạy 'rollout restart' deployment cùng label app.
 # - Không tự rollback: rollout lỗi thì in log, rollback bằng 'kubectl rollout undo deployment/<tên>'.

@@ -29,9 +29,9 @@ Chỉ đọc, không thay đổi cluster.
 Sửa file trong `manifests/` (ví dụ đổi tag image từ Jenkins `1.0.<BUILD_NUMBER>-dev`, đổi ConfigMap), rồi chạy:
 
 ```bash
-bash update.sh                      # apply mọi manifest
-bash update.sh nginx                # chỉ manifests/nginx.yaml
-bash update.sh flex-api-gateway     # chỉ manifests/flex-api-gateway.yaml
+bash restart.sh                      # apply mọi manifest
+bash restart.sh nginx                # chỉ manifests/nginx.yaml
+bash restart.sh flex-api-gateway     # chỉ manifests/flex-api-gateway.yaml
 ```
 
 Deployment đổi thì k8s tự rolling update; ConfigMap đổi thì script `rollout restart` đúng deployment cùng label `app` rồi chờ `rollout status`. Yêu cầu tên Deployment trùng label `app` của ConfigMap. Rollout lỗi thì script in log, rollback bằng `kubectl rollout undo deployment/<tên>`.
