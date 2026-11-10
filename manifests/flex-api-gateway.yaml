@@ -9,6 +9,7 @@ data:
   ASPNETCORE_ENVIRONMENT: "Production"
   Logging__LogLevel__Default: "Information"
   Logging__LogLevel__Microsoft.AspNetCore: "Warning"
+  Logging__Sinks__Logstash: "false" # chưa có Logstash; 127.0.0.1:5000 trong pod không tồn tại
   JwtSettings__Issuer: "luyenhaidangit"
   JwtSettings__Audience: "flex"
 ---
@@ -35,7 +36,7 @@ metadata:
   labels:
     app: flex-api-gateway
 spec:
-  replicas: 2
+  replicas: 1 # học/test, chưa có người dùng; tăng sau khi đo bằng kubectl top
   # Tìm pod theo label; phải khớp template.metadata.labels
   selector:
     matchLabels:
@@ -60,10 +61,10 @@ spec:
                 name: flex-api-gateway-secret
           resources:
             requests: # đảm bảo, dùng để chọn node
-              cpu: "100m"
-              memory: "128Mi"
+              cpu: "50m"
+              memory: "96Mi"
             limits: # trần: vượt memory -> OOMKilled
-              memory: "512Mi"
+              memory: "256Mi" # ước lượng, chưa đo; OOMKilled thì nâng
           # Startup: chờ app khởi động xong mới bật liveness/readiness
           startupProbe:
             httpGet:
