@@ -1,3 +1,31 @@
+# ConfigMap: cấu hình nginx của Flex, mount vào container. Giai đoạn phát triển: mọi đường dẫn trả trang "Đang xây dựng".
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  labels:
+    app: nginx
+data:
+  default.conf: |
+    server {
+        listen 80;
+        server_name _;
+        charset utf-8;
+        server_tokens off;
+
+        # Probe của k8s; không phụ thuộc nội dung trang.
+        location = /healthz {
+            access_log off;
+            default_type text/plain;
+            return 200 "ok\n";
+        }
+
+        location / {
+            default_type text/html;
+            return 200 '<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Flex</title></head><body style="font-family:sans-serif;display:grid;place-items:center;min-height:100vh;margin:0"><h1>Đang xây dựng</h1></body></html>';
+        }
+    }
+---
 # Deployment: giữ N pod chạy, tự tạo lại khi chết, rolling update khi đổi image
 apiVersion: apps/v1
 kind: Deployment
@@ -21,17 +49,21 @@ spec:
           image: nginx:1.27-alpine # ghim version, không dùng latest
           ports:
             - containerPort: 80
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
           # Readiness: lỗi -> loại khỏi Service (không restart)
           readinessProbe:
             httpGet:
-              path: /
+              path: /healthz
               port: 80
             initialDelaySeconds: 3
             periodSeconds: 5
           # Liveness: lỗi -> restart container
           livenessProbe:
             httpGet:
-              path: /
+              path: /healthz
               port: 80
             initialDelaySeconds: 10
             periodSeconds: 10
@@ -42,6 +74,10 @@ spec:
             limits: # trần: vượt memory -> OOMKilled
               cpu: 200m
               memory: 128Mi
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: nginx-config
 ---
 # Service: địa chỉ ổn định + cân bằng tải cho các pod
 apiVersion: v1
@@ -51,9 +87,10 @@ metadata:
   labels:
     app: nginx
 spec:
-  type: ClusterIP # chỉ trong cluster; từ máy dùng kubectl port-forward
+  type: NodePort # mở cổng 30080 trên host; nginx Docker (flex-environment) proxy tới host.docker.internal:30080
   selector: # chọn pod theo label; lệch label -> Endpoints trống
     app: nginx
   ports:
     - port: 80 # port của Service
       targetPort: 80 # port của container
+      nodePort: 30080 # cổng trên host (dải 30000-32767); không mở ra Internet

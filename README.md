@@ -2,7 +2,7 @@
 
 Cấu hình môi trường Kubernetes cho Flex platform. Repo này chỉ chứa manifest YAML thuần (không dùng Kustomize/Helm) và script vận hành; mã nguồn service nằm ở các repo riêng.
 
-> Trạng thái: mới khởi tạo khung dự án. Đã có manifest `manifests/nginx.yaml` (Deployment + Service ClusterIP) để học k8s, chưa apply lên cluster nào.
+> Trạng thái: mới khởi tạo khung dự án. Đã có manifest `manifests/nginx.yaml` (ConfigMap + Deployment + Service NodePort `30080`): nginx của Flex, giai đoạn phát triển chỉ trả trang "Đang xây dựng". Chưa apply lên cluster nào.
 
 ## Cài công cụ (Ubuntu/WSL2)
 
@@ -24,12 +24,12 @@ bash scripts/cluster-info.sh -A             # workload ở mọi namespace (ho�
 
 Chỉ đọc, không thay đổi cluster.
 
-## Chạy thử nginx (local)
+## Chạy thử nginx của Flex
 
 ```bash
 kubectl apply -f manifests/nginx.yaml
 kubectl get pods,svc -l app=nginx
-kubectl port-forward svc/nginx 8080:80      # mở http://localhost:8080
+curl -i http://localhost:30080/             # NodePort trên host; nginx Docker (flex-environment) proxy tới đây
 ```
 
 Rollback: `kubectl rollout undo deployment/nginx`. Dọn dẹp: `kubectl delete -f manifests/nginx.yaml`.
