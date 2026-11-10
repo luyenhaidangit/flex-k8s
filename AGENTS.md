@@ -12,6 +12,7 @@
 - Trước khi sửa, đọc `flex-devops-engineering` (skill ở `../.agents/skills/`).
 - Manifest là YAML thuần trong `manifests/`; không dùng Kustomize/Helm trừ khi người dùng yêu cầu.
 - Image pin version cụ thể; không dùng `latest`.
+- Thứ tự resource trong một file YAML (`kubectl apply -f` xử lý tuần tự từ trên xuống): `ConfigMap`/`Secret` → `PersistentVolumeClaim` → `Service` → `Deployment`/`StatefulSet`/`DaemonSet` → `Ingress`. `Deployment` đứng sau `ConfigMap`/`PVC` để Pod không kẹt `CreateContainerConfigError`/`ContainerCreating`; `Service` đứng trước `Deployment` để biến môi trường `<TÊN_SERVICE>_SERVICE_HOST` được bơm vào Pod lúc tạo; `Ingress` đứng cuối vì chỉ trỏ về `Service` đã khai báo.
 - Không commit secret/kubeconfig; không chạy lệnh làm thay đổi cluster (`kubectl apply/delete`, `helm install`) khi chưa được yêu cầu rõ.
 - Validate tĩnh trước (`kubectl apply --dry-run=client -f manifests/`); phân biệt rõ "đã viết manifest" với "đã triển khai".
 - Khi đổi cấu trúc hoặc lệnh vận hành, cập nhật `README.md`/`docs/`.
