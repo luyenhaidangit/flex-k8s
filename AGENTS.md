@@ -16,3 +16,4 @@
 - Không commit secret/kubeconfig; không chạy lệnh làm thay đổi cluster (`kubectl apply/delete`, `helm install`) khi chưa được yêu cầu rõ.
 - Validate tĩnh trước (`kubectl apply --dry-run=client -f manifests/`); phân biệt rõ "đã viết manifest" với "đã triển khai".
 - Khi đổi cấu trúc hoặc lệnh vận hành, cập nhật `README.md`/`docs/`.
+- Script shell (`*.sh`): Git trên Windows không lưu quyền thực thi (`core.fileMode=false`), `chmod +x` trên máy dev vô hiệu. Sau khi tạo mới hoặc sửa bất kỳ `*.sh` nào, chạy `git add --chmod=+x <file>` để file vào index với mode `100755`, server `git pull` xong chạy được ngay. Kiểm tra bằng `git ls-files -s <file>` (phải là `100755`).
