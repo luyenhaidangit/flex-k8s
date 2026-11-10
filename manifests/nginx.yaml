@@ -7,6 +7,12 @@ metadata:
     app: nginx
 data:
   default.conf: |
+    # Giữ scheme gốc (https) do nginx Docker phía trước gửi xuống; không có thì dùng scheme của kết nối.
+    map $http_x_forwarded_proto $forwarded_proto {
+        default $http_x_forwarded_proto;
+        ""      $scheme;
+    }
+
     server {
         listen 80;
         server_name _;
@@ -18,6 +24,20 @@ data:
             access_log off;
             default_type text/plain;
             return 200 "ok\n";
+        }
+
+        # API: chuyển nguyên path tới flex-api-gateway (namespace default).
+        # Dùng biến + resolver (CoreDNS của k3s, cần tên đầy đủ) để nginx vẫn khởi động khi gateway chưa được apply;
+        # gateway chưa chạy thì /api/ trả 502 còn trang "Đang xây dựng" không bị ảnh hưởng.
+        location /api/ {
+            resolver kube-dns.kube-system.svc.cluster.local valid=10s ipv6=off;
+            set $gateway_upstream http://flex-api-gateway.default.svc.cluster.local;
+            proxy_pass $gateway_upstream;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $forwarded_proto;
         }
 
         location / {

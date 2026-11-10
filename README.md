@@ -50,5 +50,5 @@ docs/                # Tài liệu setup và vận hành
 
 ## Việc cần quyết định tiếp
 
-- Cluster: k3s 1 node trên server (`flex-environment/setup/04-init-k3s.sh`). Manifest `flex-api-gateway.yaml` đã chuyển từ `flex-environment/k8s/` sang `manifests/`; cần tạo Secret `flex-api-gateway-secret` lúc deploy (không commit).
+- Cluster: k3s 1 node trên server (`flex-environment/setup/04-init-k3s.sh`). Manifest `flex-api-gateway.yaml` đã chuyển từ `flex-environment/k8s/` sang `manifests/`; giai đoạn dev dùng JWT key trong `appsettings.json` của image (chưa có Secret). `yarp.json` trong image trỏ tới `flex-auth-service`/`host.docker.internal`, chưa có service tương ứng trong cluster nên route `/api/*` sẽ trả 502/503 cho tới khi triển khai các service đó. nginx (`nginx.yaml`) chuyển `/api/` tới gateway.
 - Danh sách workload cần đưa lên K8s (xem `../flex-environment/docker-compose.*.yml`).
