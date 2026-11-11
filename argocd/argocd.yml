@@ -1,0 +1,21 @@
+# Application của ArgoCD: đồng bộ thư mục manifests/ của repo này vào cluster (YAML thuần, không Helm/Kustomize).
+# Áp dụng một lần (sau khi đã cài ArgoCD vào namespace argocd): kubectl apply -n argocd -f argocd/argocd.yml
+# Nằm ngoài manifests/ để Application không tự đồng bộ chính nó và restart.sh không apply file này.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: flex
+  namespace: argocd
+  # Cố ý KHÔNG đặt finalizer resources-finalizer.argocd.argoproj.io: có finalizer thì xóa Application sẽ xóa luôn workload.
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/luyenhaidangit/flex-k8s
+    targetRevision: main
+    path: manifests # mặc định không đọc thư mục con
+  destination:
+    server: https://kubernetes.default.svc # cluster chứa ArgoCD (k3s 1 node)
+    namespace: default # khớp hiện trạng: nginx và flex-api-gateway đang ở default
+  # Để trống = sync thủ công (bấm Sync trên UI hoặc argocd app sync flex).
+  # Khi đã tin cậy mới bật: automated: { selfHeal: true }; prune để bật sau cùng.
+  syncPolicy: {}
