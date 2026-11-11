@@ -36,6 +36,23 @@ bash restart.sh flex-api-gateway     # chỉ manifests/flex-api-gateway.yaml
 
 Deployment đổi thì k8s tự rolling update; ConfigMap đổi thì script `rollout restart` đúng deployment cùng label `app` rồi chờ `rollout status`. Yêu cầu tên Deployment trùng label `app` của ConfigMap. Rollout lỗi thì script in log, rollback bằng `kubectl rollout undo deployment/<tên>`.
 
+## Tạo Secret cho gateway
+
+`flex-api-gateway` đọc `JwtSettings__SecretKey` từ Secret `flex-api-gateway-secret` (nạp qua `secretRef`). Secret không nằm trong repo; tạo trên cluster **trước** khi apply manifest, nếu không Pod kẹt `CreateContainerConfigError`.
+
+```bash
+read -rs -p "JwtSettings__SecretKey: " JWT_KEY; echo     # hoặc: JWT_KEY="$(openssl rand -base64 48)"
+kubectl create secret generic flex-api-gateway-secret \
+  --from-literal=JwtSettings__SecretKey="$JWT_KEY"
+unset JWT_KEY
+bash restart.sh flex-api-gateway
+```
+
+- Khóa phải trùng khóa `flex-auth-service` dùng để ký token, nếu không gateway từ chối mọi token.
+- Đổi khóa (xoay): `kubectl delete secret flex-api-gateway-secret`, tạo lại như trên, rồi `kubectl rollout restart deployment/flex-api-gateway`. Secret đổi không tự restart Pod và `restart.sh` chỉ theo dõi ConfigMap.
+- Kiểm tra tên key (không in giá trị): `kubectl get secret flex-api-gateway-secret -o jsonpath='{.data}' | jq 'keys'`.
+- Không lưu hoặc dán output `kubectl get secret -o yaml`: base64 không phải mã hóa.
+
 ## Chạy thử nginx của Flex
 
 ```bash
@@ -62,5 +79,5 @@ docs/                # Tài liệu setup và vận hành
 
 ## Việc cần quyết định tiếp
 
-- Cluster: k3s 1 node trên server (`flex-environment/setup/04-init-k3s.sh`). Manifest `flex-api-gateway.yaml` đã chuyển từ `flex-environment/k8s/` sang `manifests/`; giai đoạn dev dùng JWT key trong `appsettings.json` của image (chưa có Secret). `yarp.json` trong image trỏ tới `flex-auth-service`/`host.docker.internal`, chưa có service tương ứng trong cluster nên route `/api/*` sẽ trả 502/503 cho tới khi triển khai các service đó. nginx (`nginx.yaml`) chuyển `/api/` tới gateway.
+- Cluster: k3s 1 node trên server (`flex-environment/setup/04-init-k3s.sh`). Manifest `flex-api-gateway.yaml` đã chuyển từ `flex-environment/k8s/` sang `manifests/`; JWT key lấy từ Secret `flex-api-gateway-secret` (xem mục "Tạo Secret cho gateway"). `yarp.json` trong image trỏ tới `flex-auth-service`/`host.docker.internal`, chưa có service tương ứng trong cluster nên route `/api/*` sẽ trả 502/503 cho tới khi triển khai các service đó. nginx (`nginx.yaml`) chuyển `/api/` tới gateway.
 - Danh sách workload cần đưa lên K8s (xem `../flex-environment/docker-compose.*.yml`).

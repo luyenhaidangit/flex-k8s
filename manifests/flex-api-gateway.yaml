@@ -55,8 +55,10 @@ spec:
           envFrom:
             - configMapRef:
                 name: flex-api-gateway-config
-            # Giai đoạn dev: JwtSettings__SecretKey lấy từ appsettings.json trong image, chưa dùng Secret.
-            # Khi lên môi trường thật: tạo Secret lúc deploy (không commit) rồi thêm lại secretRef.
+            # Secret tạo lúc deploy bằng kubectl (không commit), xem README.md mục "Tạo Secret cho gateway".
+            # Thiếu Secret -> Pod kẹt CreateContainerConfigError.
+            - secretRef:
+                name: flex-api-gateway-secret
           resources:
             requests: # đảm bảo, dùng để chọn node
               cpu: "50m"
