@@ -41,15 +41,22 @@ Deployment đổi thì k8s tự rolling update; ConfigMap đổi thì script `ro
 `flex-api-gateway` đọc `JwtSettings__SecretKey` từ Secret `flex-api-gateway-secret` (nạp qua `secretRef`). Secret không nằm trong repo; tạo trên cluster **trước** khi apply manifest, nếu không Pod kẹt `CreateContainerConfigError`.
 
 ```bash
-read -rs -p "JwtSettings__SecretKey: " JWT_KEY; echo     # hoặc: JWT_KEY="$(openssl rand -base64 48)"
-kubectl create secret generic flex-api-gateway-secret \
-  --from-literal=JwtSettings__SecretKey="$JWT_KEY"
-unset JWT_KEY
-bash restart.sh flex-api-gateway
+bash set-secret.sh flex-api-gateway-secret JwtSettings__SecretKey   # hỏi giá trị (không hiện ký tự)
+bash restart.sh flex-api-gateway                                    # lần đầu: apply Deployment dùng secretRef
 ```
 
+`set-secret.sh [-n <namespace>] <secret-name> KEY [KEY...]` dùng cho cả thêm mới lẫn cập nhật:
+
+- Giá trị lấy từ biến môi trường cùng tên KEY, không có thì hỏi trên terminal. Giá trị đi qua stdin, không nằm trong tham số lệnh.
+- Secret chưa có thì tạo; đã có thì `kubectl patch --type merge` chỉ đổi các KEY được truyền, các key khác giữ nguyên.
+- Dữ liệu Secret đổi thì `rollout restart` deployment tên bỏ hậu tố `-secret` (`flex-api-gateway-secret` -> `flex-api-gateway`) và chờ `rollout status`; không đổi thì không restart. Rollout lỗi thì in log, rollback bằng `kubectl rollout undo deployment/<tên>`.
+- Từ chối giá trị rỗng, còn là `REPLACE_ME*`, chứa xuống dòng, hoặc `JwtSettings__SecretKey` ngắn hơn 32 ký tự. Cần kubectl hỗ trợ `patch --patch-file` (khoảng 1.22 trở lên).
+- Chạy không có terminal (CI): đặt biến môi trường trước, ví dụ `JwtSettings__SecretKey="$KEY" bash set-secret.sh flex-api-gateway-secret JwtSettings__SecretKey`.
+
+Lưu ý:
+
 - Khóa phải trùng khóa `flex-auth-service` dùng để ký token, nếu không gateway từ chối mọi token.
-- Đổi khóa (xoay): `kubectl delete secret flex-api-gateway-secret`, tạo lại như trên, rồi `kubectl rollout restart deployment/flex-api-gateway`. Secret đổi không tự restart Pod và `restart.sh` chỉ theo dõi ConfigMap.
+- Lần đầu apply `flex-api-gateway.yaml` phải có Secret trước, nếu không Pod kẹt `CreateContainerConfigError`: chạy `set-secret.sh` trước `restart.sh`.
 - Kiểm tra tên key (không in giá trị): `kubectl get secret flex-api-gateway-secret -o jsonpath='{.data}' | jq 'keys'`.
 - Không lưu hoặc dán output `kubectl get secret -o yaml`: base64 không phải mã hóa.
 
