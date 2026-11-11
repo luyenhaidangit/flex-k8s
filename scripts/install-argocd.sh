@@ -36,7 +36,8 @@ cat <<'EOF'
 >> Xong. Việc cần làm một lần sau khi cài:
    - Lấy mật khẩu admin ban đầu (không in ra ở đây):
        kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d
-   - Mở https://flex.luyenhaidangit.pro/argocd (cần location /argocd ở Nginx), đăng nhập 'admin', đổi mật khẩu,
+   - Áp route của nginx k8s (location /argocd): bash restart.sh nginx. Rồi mở https://flex.luyenhaidangit.pro/argocd,
+     đăng nhập 'admin', đổi mật khẩu,
      rồi xóa secret khởi tạo: kubectl -n argocd delete secret argocd-initial-admin-secret
    - Tạm thời chưa qua Nginx: kubectl -n argocd port-forward svc/argocd-server 8080:80 (mở http://localhost:8080/argocd).
 EOF

@@ -1,6 +1,6 @@
 # flex-k8s
 
-Cấu hình môi trường Kubernetes cho Flex platform. Repo này chỉ chứa manifest YAML thuần (không dùng Kustomize/Helm) và script vận hành; mã nguồn service nằm ở các repo riêng.
+Cấu hình môi trường Kubernetes cho Flex platform. Repo này chứa manifest YAML thuần (không dùng Kustomize/Helm) và script vận hành; ngoại lệ duy nhất là `argocd/install/` dùng Kustomize để cài Argo CD bản đã pin version. Mã nguồn service nằm ở các repo riêng.
 
 > Trạng thái: mới khởi tạo khung dự án. Đã có manifest `manifests/nginx.yaml` (ConfigMap + Deployment + Service NodePort `30080`): nginx của Flex, giai đoạn phát triển chỉ trả trang "Đang xây dựng". Chưa apply lên cluster nào.
 
@@ -23,6 +23,32 @@ bash scripts/cluster-info.sh -A             # workload ở mọi namespace (ho�
 ```
 
 Chỉ đọc, không thay đổi cluster.
+
+## Cài Argo CD
+
+Argo CD cài vào namespace `argocd` của cluster k3s 1 node, khai báo hoàn toàn bằng file (không tạo namespace hay sửa cấu hình bằng tay):
+
+```text
+argocd/install/    # Kustomize: namespace + install.yaml chính thức v3.5.7 + patch của Flex
+argocd/argocd.yml  # Application 'flex' (đồng bộ manifests/, sync thủ công)
+```
+
+```bash
+kubectl kustomize argocd/install | head        # chỉ render, không đụng cluster (cần mạng để tải install.yaml)
+bash scripts/install-argocd.sh                 # apply install + chờ sẵn sàng + apply Application
+```
+
+Patch của Flex: bản non-HA; UI chạy HTTP thuần dưới path `/argocd` (`server.insecure`, `server.rootpath`, `server.basehref`); Service `argocd-server` giữ ClusterIP; tắt dex, notifications và applicationset (`replicas: 0`) cho nhẹ node.
+
+Truy cập: `https://flex.luyenhaidangit.pro/argocd`. Đường đi: Nginx Docker (flex-environment, đã chuyển mọi path vào NodePort `30080`, không cần sửa) → Nginx trong k8s (`manifests/nginx.yaml`, `location /argocd`) → Service `argocd-server.argocd`. **Chỉ host `flex.luyenhaidangit.pro` được vào `/argocd`; `api.luyenhaidangit.pro` cũng đi vào cùng NodePort nhưng nginx k8s trả 404 theo `Host` (map `$argocd_allowed`). **Thứ tự:** cài Argo CD trước (`install-argocd.sh`), rồi mới `bash restart.sh nginx` để áp route; nginx k8s phân giải tên Service lúc khởi động, thiếu `argocd-server` thì pod nginx mới CrashLoop (rolling update giữ pod cũ phục vụ). Chưa qua Nginx thì dùng `kubectl -n argocd port-forward svc/argocd-server 8080:80` rồi mở `http://localhost:8080/argocd`.
+
+Sau khi cài, một lần: lấy mật khẩu admin ban đầu (`kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d`), đăng nhập, đổi mật khẩu rồi xóa secret khởi tạo. Mật khẩu không nằm trong Git. CLI qua Nginx cần `argocd login flex.luyenhaidangit.pro --grpc-web --grpc-web-root-path /argocd`.
+
+Lưu ý:
+
+- UI công khai, chỉ có đăng nhập admin bảo vệ (Argo CD không có MFA sẵn). Không mở thêm NodePort mới; NodePort `30080` hiện có vẫn cần firewall không cho Internet vào.
+- Application `flex` sync thủ công: `restart.sh` và Argo CD cùng ghi vào cluster nên chưa bật `automated`/`selfHeal` cho tới khi chốt cách xử lý (ConfigMap đổi không tự restart pod, annotation `restartedAt` của `rollout restart`).
+- Nâng version: đổi tag `v3.5.7` trong `argocd/install/kustomization.yaml`, đọc release notes, kiểm tra lại thứ tự `ports[0]` của `argocd-server` rồi chạy lại script.
 
 ## Cập nhật nhanh sau khi sửa manifest
 

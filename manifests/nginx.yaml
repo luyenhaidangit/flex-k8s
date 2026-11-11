@@ -13,6 +13,18 @@ data:
         ""      $scheme;
     }
 
+    # Hỗ trợ WebSocket cho Argo CD.
+    map $http_upgrade $connection_upgrade {
+        default upgrade;
+        ""      "";
+    }
+
+    # Chỉ host flex được vào /argocd; api và các host khác (nginx Docker giữ nguyên Host khi chuyển xuống) nhận 404.
+    map $host $argocd_allowed {
+        default                  0;
+        flex.luyenhaidangit.pro  1;
+    }
+
     server {
         listen 80;
         server_name _;
@@ -38,6 +50,25 @@ data:
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $forwarded_proto;
+        }
+
+        # Argo CD (namespace argocd): chuyển nguyên path /argocd, argocd-server chạy với server.rootpath=/argocd và HTTP thuần (server.insecure).
+        # Cùng lý do với /api/: proxy_pass viết trực tiếp, có dấu chấm cuối. Hệ quả: Service argocd-server phải tồn tại
+        # (cài Argo CD bằng scripts/install-argocd.sh) TRƯỚC khi nginx khởi động, nếu không nginx lỗi "host not found in upstream" và pod mới CrashLoop.
+        location /argocd {
+            if ($argocd_allowed = 0) {
+                return 404;
+            }
+            proxy_pass http://argocd-server.argocd.svc.cluster.local.;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $forwarded_proto;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection $connection_upgrade;
+            proxy_read_timeout 1h; # luồng cập nhật trạng thái app giữ kết nối lâu
+            proxy_buffering off;
         }
 
         location / {

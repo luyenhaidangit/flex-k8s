@@ -1,0 +1,5 @@
+# Namespace của Argo CD. Khai báo trong Git để cài đặt không cần tạo tay bằng kubectl create namespace.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argocd

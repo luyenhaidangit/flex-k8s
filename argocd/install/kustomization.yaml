@@ -1,0 +1,43 @@
+# Cài Argo CD (bản non-HA, phù hợp k3s 1 node): install.yaml chính thức đã pin version + các vá riêng của Flex.
+# Chạy qua scripts/install-argocd.sh, hoặc thủ công: kubectl apply --server-side -k argocd/install
+# Nâng version: đổi tag v3.5.7 ở resources, xem release notes trước và thử bằng 'kubectl kustomize argocd/install'.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: argocd
+
+resources:
+  - namespace.yaml
+  - https://raw.githubusercontent.com/argoproj/argo-cd/v3.5.7/manifests/install.yaml
+
+patches:
+  # UI/API chạy dưới path /argocd, HTTP thuần: TLS do Nginx (flex-environment) kết thúc.
+  # Nginx trong k8s (manifests/nginx.yaml, location /argocd) proxy tới Service argocd-server (ClusterIP, port 80);
+  # Nginx Docker ngoài host đã chuyển mọi path vào nginx k8s qua NodePort 30080 nên không cần cấu hình riêng.
+  - patch: |-
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: argocd-cmd-params-cm
+      data:
+        server.insecure: "true"
+        server.rootpath: "/argocd"
+        server.basehref: "/argocd"
+
+  # Tiết kiệm tài nguyên cho node duy nhất: tắt thành phần Flex chưa dùng.
+  # Bật lại: đổi replicas về 1 (dex khi cần SSO, notifications khi cần thông báo, applicationset khi có nhiều Application).
+  - target: { kind: Deployment, name: argocd-dex-server }
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 0
+  - target: { kind: Deployment, name: argocd-notifications-controller }
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 0
+  - target: { kind: Deployment, name: argocd-applicationset-controller }
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 0
