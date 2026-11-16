@@ -46,7 +46,9 @@ Sau khi cài, một lần: lấy mật khẩu admin ban đầu (`kubectl -n argo
 
 Lưu ý:
 
-- UI công khai, chỉ có đăng nhập admin bảo vệ (Argo CD không có MFA sẵn). Không mở thêm NodePort mới; NodePort `30080` hiện có vẫn cần firewall không cho Internet vào.
+- Chính sách truy cập UI (hiện tại, mục đích học): cho phép mọi IP vào `/argocd`, chỉ có đăng nhập admin bảo vệ (Argo CD không có MFA sẵn). Rủi ro còn lại: Argo CD có quyền triển khai lên cluster.
+- Kế hoạch: sau này chỉ cấp truy cập `/argocd` cho các IP được phép (allowlist theo IP) ở Nginx Docker của `flex-environment`. Chưa thực hiện, chưa có cấu hình nào cho việc này.
+- Không mở thêm NodePort mới; NodePort `30080` hiện có vẫn cần firewall không cho Internet vào.
 - Application `flex` sync thủ công: `restart.sh` và Argo CD cùng ghi vào cluster nên chưa bật `automated`/`selfHeal` cho tới khi chốt cách xử lý (ConfigMap đổi không tự restart pod, annotation `restartedAt` của `rollout restart`).
 - Nâng version: đổi tag `v3.5.7` trong `argocd/install/kustomization.yaml`, đọc release notes, kiểm tra lại thứ tự `ports[0]` của `argocd-server` rồi chạy lại script.
 
