@@ -88,6 +88,10 @@ Lưu ý:
 - Kiểm tra tên key (không in giá trị): `kubectl get secret flex-api-gateway-secret -o jsonpath='{.data}' | jq 'keys'`.
 - Không lưu hoặc dán output `kubectl get secret -o yaml`: base64 không phải mã hóa.
 
+## Giới hạn truy cập gateway
+
+`flex-api-gateway.yaml` có NetworkPolicy `flex-api-gateway-allow-nginx`: chỉ pod `app=nginx` trong namespace `default` được vào cổng 8080 của gateway. `kubectl port-forward` và probe vẫn dùng được. NetworkPolicy không lọc được traffic vào NodePort `30080` từ bên ngoài (nguồn bị SNAT thành IP node), phần đó vẫn do firewall host đảm nhiệm.
+
 ## Chạy thử nginx của Flex
 
 ```bash
