@@ -1,0 +1,14 @@
+# ConfigMap: cấu hình không nhạy cảm, nạp vào container qua envFrom
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flex-api-gateway-config
+  labels:
+    app: flex-api-gateway
+data:
+  ASPNETCORE_ENVIRONMENT: "Production"
+  Logging__LogLevel__Default: "Information"
+  Logging__LogLevel__Microsoft.AspNetCore: "Warning"
+  Logging__Sinks__Logstash: "false" # chưa có Logstash; 127.0.0.1:5000 trong pod không tồn tại
+  JwtSettings__Issuer: "luyenhaidangit"
+  JwtSettings__Audience: "flex"

@@ -2,7 +2,7 @@
 
 Cấu hình môi trường Kubernetes cho Flex platform. Repo này chứa manifest YAML thuần (không dùng Kustomize/Helm) và script vận hành; ngoại lệ duy nhất là `argocd/install/` dùng Kustomize để cài Argo CD bản đã pin version. Mã nguồn service nằm ở các repo riêng.
 
-> Trạng thái: mới khởi tạo khung dự án. Đã có manifest `manifests/nginx.yaml` (ConfigMap + Deployment + Service NodePort `30080`): nginx của Flex, giai đoạn phát triển chỉ trả trang "Đang xây dựng". Chưa apply lên cluster nào.
+> Trạng thái: mới khởi tạo khung dự án. Đã có manifest `manifests/nginx/` (ConfigMap + Deployment + Service NodePort `30080`): nginx của Flex, giai đoạn phát triển chỉ trả trang "Đang xây dựng". Chưa apply lên cluster nào.
 
 ## Cài công cụ (Ubuntu/WSL2)
 
@@ -40,7 +40,7 @@ bash scripts/install-argocd.sh                 # apply install + chờ sẵn sà
 
 Patch của Flex: bản non-HA; UI chạy HTTP thuần dưới path `/argocd` (`server.insecure`, `server.rootpath`, `server.basehref`); Service `argocd-server` giữ ClusterIP; tắt dex, notifications và applicationset (`replicas: 0`) cho nhẹ node.
 
-Truy cập: `https://flex.luyenhaidangit.pro/argocd`. Đường đi: Nginx Docker (flex-environment, đã chuyển mọi path vào NodePort `30080`, không cần sửa) → Nginx trong k8s (`manifests/nginx.yaml`, `location /argocd`) → Service `argocd-server.argocd`. **Chỉ host `flex.luyenhaidangit.pro` được vào `/argocd`; `api.luyenhaidangit.pro` cũng đi vào cùng NodePort nhưng nginx k8s trả 404 theo `Host` (map `$argocd_allowed`). **Thứ tự:** cài Argo CD trước (`install-argocd.sh`), rồi mới `bash restart.sh nginx` để áp route; nginx k8s phân giải tên Service lúc khởi động, thiếu `argocd-server` thì pod nginx mới CrashLoop (rolling update giữ pod cũ phục vụ). Chưa qua Nginx thì dùng `kubectl -n argocd port-forward svc/argocd-server 8080:80` rồi mở `http://localhost:8080/argocd`.
+Truy cập: `https://flex.luyenhaidangit.pro/argocd`. Đường đi: Nginx Docker (flex-environment, đã chuyển mọi path vào NodePort `30080`, không cần sửa) → Nginx trong k8s (`manifests/nginx/10-configmap.yaml`, `location /argocd`) → Service `argocd-server.argocd`. **Chỉ host `flex.luyenhaidangit.pro` được vào `/argocd`; `api.luyenhaidangit.pro` cũng đi vào cùng NodePort nhưng nginx k8s trả 404 theo `Host` (map `$argocd_allowed`). **Thứ tự:** cài Argo CD trước (`install-argocd.sh`), rồi mới `bash restart.sh nginx` để áp route; nginx k8s phân giải tên Service lúc khởi động, thiếu `argocd-server` thì pod nginx mới CrashLoop (rolling update giữ pod cũ phục vụ). Chưa qua Nginx thì dùng `kubectl -n argocd port-forward svc/argocd-server 8080:80` rồi mở `http://localhost:8080/argocd`.
 
 Sau khi cài, một lần: lấy mật khẩu admin ban đầu (`kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d`), đăng nhập, đổi mật khẩu rồi xóa secret khởi tạo. Mật khẩu không nằm trong Git. CLI qua Nginx cần `argocd login flex.luyenhaidangit.pro --grpc-web --grpc-web-root-path /argocd`.
 
@@ -57,9 +57,9 @@ Lưu ý:
 Sửa file trong `manifests/` (ví dụ đổi tag image từ Jenkins `1.0.<BUILD_NUMBER>-dev`, đổi ConfigMap), rồi chạy:
 
 ```bash
-bash restart.sh                      # apply mọi manifest
-bash restart.sh nginx                # chỉ manifests/nginx.yaml
-bash restart.sh flex-api-gateway     # chỉ manifests/flex-api-gateway.yaml
+bash restart.sh                      # apply mọi manifests/<app>/*.yaml
+bash restart.sh nginx                # chỉ manifests/nginx/
+bash restart.sh flex-api-gateway     # chỉ manifests/flex-api-gateway/
 ```
 
 Deployment đổi thì k8s tự rolling update; ConfigMap đổi thì script `rollout restart` đúng deployment cùng label `app` rồi chờ `rollout status`. Yêu cầu tên Deployment trùng label `app` của ConfigMap. Rollout lỗi thì script in log, rollback bằng `kubectl rollout undo deployment/<tên>`.
@@ -84,28 +84,30 @@ bash restart.sh flex-api-gateway                                    # lần đ�
 Lưu ý:
 
 - Khóa phải trùng khóa `flex-auth-service` dùng để ký token, nếu không gateway từ chối mọi token.
-- Lần đầu apply `flex-api-gateway.yaml` phải có Secret trước, nếu không Pod kẹt `CreateContainerConfigError`: chạy `set-secret.sh` trước `restart.sh`.
+- Lần đầu apply `manifests/flex-api-gateway/` phải có Secret trước, nếu không Pod kẹt `CreateContainerConfigError`: chạy `set-secret.sh` trước `restart.sh`.
 - Kiểm tra tên key (không in giá trị): `kubectl get secret flex-api-gateway-secret -o jsonpath='{.data}' | jq 'keys'`.
 - Không lưu hoặc dán output `kubectl get secret -o yaml`: base64 không phải mã hóa.
 
 ## Giới hạn truy cập gateway
 
-`flex-api-gateway.yaml` có NetworkPolicy `flex-api-gateway-allow-nginx`: chỉ pod `app=nginx` trong namespace `default` được vào cổng 8080 của gateway. `kubectl port-forward` và probe vẫn dùng được. NetworkPolicy không lọc được traffic vào NodePort `30080` từ bên ngoài (nguồn bị SNAT thành IP node), phần đó vẫn do firewall host đảm nhiệm.
+`manifests/flex-api-gateway/50-networkpolicy.yaml` có NetworkPolicy `flex-api-gateway-allow-nginx`: chỉ pod `app=nginx` trong namespace `default` được vào cổng 8080 của gateway. `kubectl port-forward` và probe vẫn dùng được. NetworkPolicy không lọc được traffic vào NodePort `30080` từ bên ngoài (nguồn bị SNAT thành IP node), phần đó vẫn do firewall host đảm nhiệm.
 
 ## Chạy thử nginx của Flex
 
 ```bash
-kubectl apply -f manifests/nginx.yaml
+kubectl apply -f manifests/nginx/
 kubectl get pods,svc -l app=nginx
 curl -i http://localhost:30080/             # NodePort trên host; nginx Docker (flex-environment) proxy tới đây
 ```
 
-Rollback: `kubectl rollout undo deployment/nginx`. Dọn dẹp: `kubectl delete -f manifests/nginx.yaml`.
+Rollback: `kubectl rollout undo deployment/nginx`. Dọn dẹp: `kubectl delete -f manifests/nginx/`.
 
 ## Cấu trúc
 
 ```text
-manifests/           # Manifest YAML thuần, áp dụng trực tiếp bằng kubectl apply -f
+manifests/           # Manifest YAML thuần, mỗi app một thư mục, áp dụng bằng kubectl apply -f manifests/<app>/
+  nginx/             # <số>-<kind>.yaml: 10-configmap, 30-service, 40-deployment
+  flex-api-gateway/  # 10-configmap, 30-service, 40-deployment, 50-networkpolicy
 scripts/             # Script vận hành (non-interactive, fail-fast)
 docs/                # Tài liệu setup và vận hành
 ```
@@ -118,5 +120,5 @@ docs/                # Tài liệu setup và vận hành
 
 ## Việc cần quyết định tiếp
 
-- Cluster: k3s 1 node trên server (`flex-environment/setup/04-init-k3s.sh`). Manifest `flex-api-gateway.yaml` đã chuyển từ `flex-environment/k8s/` sang `manifests/`; JWT key lấy từ Secret `flex-api-gateway-secret` (xem mục "Tạo Secret cho gateway"). `yarp.json` trong image trỏ tới `flex-auth-service`/`host.docker.internal`, chưa có service tương ứng trong cluster nên route `/api/*` sẽ trả 502/503 cho tới khi triển khai các service đó. nginx (`nginx.yaml`) chuyển `/api/` tới gateway.
+- Cluster: k3s 1 node trên server (`flex-environment/setup/04-init-k3s.sh`). Manifest gateway đã chuyển từ `flex-environment/k8s/` sang `manifests/flex-api-gateway/`; JWT key lấy từ Secret `flex-api-gateway-secret` (xem mục "Tạo Secret cho gateway"). `yarp.json` trong image trỏ tới `flex-auth-service`/`host.docker.internal`, chưa có service tương ứng trong cluster nên route `/api/*` sẽ trả 502/503 cho tới khi triển khai các service đó. nginx (`manifests/nginx/`) chuyển `/api/` tới gateway.
 - Danh sách workload cần đưa lên K8s (xem `../flex-environment/docker-compose.*.yml`).

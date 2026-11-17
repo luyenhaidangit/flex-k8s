@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Sửa file trong manifests/ rồi chạy: apply toàn bộ manifest, service nào đổi thì chạy lại đúng service đó.
+# Mỗi app một thư mục manifests/<app>/, file đặt tên <số>-<kind>.yaml; apply theo thứ tự tên file (xem AGENTS.md).
 # Cách dùng:
-#   bash restart.sh                      # apply mọi manifests/*.yaml
-#   bash restart.sh nginx                # chỉ apply manifests/nginx.yaml
-#   bash restart.sh flex-api-gateway     # chỉ apply manifests/flex-api-gateway.yaml
+#   bash restart.sh                      # apply mọi manifests/<app>/*.yaml
+#   bash restart.sh nginx                # chỉ apply manifests/nginx/
+#   bash restart.sh flex-api-gateway     # chỉ apply manifests/flex-api-gateway/
 # - Deployment (image, env, probe, resources...) đổi: k8s tự rolling update khi apply.
 # - ConfigMap đổi: pod không tự nạp lại, script chạy 'rollout restart' deployment cùng label app.
 # - Không tự rollback: rollout lỗi thì in log, rollback bằng 'kubectl rollout undo deployment/<tên>'.
@@ -16,14 +17,15 @@ command -v kubectl >/dev/null 2>&1 || { echo "!! Thiếu 'kubectl'." >&2; exit 1
 kubectl --request-timeout=5s get nodes >/dev/null 2>&1 || { echo "!! Không kết nối được cluster." >&2; exit 1; }
 
 if [ $# -gt 1 ]; then
-  echo "!! Chỉ nhận tối đa 1 tên manifest." >&2
+  echo "!! Chỉ nhận tối đa 1 tên app." >&2
   exit 2
 elif [ $# -eq 1 ]; then
-  [ -f "manifests/$1.yaml" ] || { echo "!! Không có manifests/$1.yaml." >&2; exit 2; }
-  FILES=("manifests/$1.yaml")
+  FILES=(manifests/"$1"/*.yaml)
+  [ -f "${FILES[0]}" ] || { echo "!! Không có manifest nào trong manifests/$1/." >&2; exit 2; }
 else
   # Thứ tự chữ cái: flex-api-gateway trước nginx (nginx phân giải DNS Service gateway lúc khởi động).
-  FILES=(manifests/*.yaml)
+  FILES=(manifests/*/*.yaml)
+  [ -f "${FILES[0]}" ] || { echo "!! Không có manifest nào trong manifests/<app>/." >&2; exit 2; }
 fi
 
 # Mỗi dòng "<app> <hash dữ liệu ConfigMap>" của mọi ConfigMap có label app.
@@ -48,9 +50,9 @@ for app in $CHANGED; do
   fi
 done
 
-# Chờ rollout của các deployment có trong file đã apply.
+# Chờ rollout của các deployment có trong file đã apply ('-o name' đúng cho cả file một object lẫn nhiều object).
 for f in "${FILES[@]}"; do
-  for dep in $(kubectl get -f "$f" -o jsonpath='{range .items[?(@.kind=="Deployment")]}{.metadata.name}{"\n"}{end}' 2>/dev/null); do
+  for dep in $(kubectl get -f "$f" -o name 2>/dev/null | sed -n 's#^deployment\.apps/##p'); do
     if ! kubectl rollout status "deployment/$dep" --timeout=180s; then
       echo "!! Rollout '$dep' lỗi. Log pod gần nhất:" >&2
       kubectl logs -l "app=$dep" --tail=30 --all-containers >&2 || true

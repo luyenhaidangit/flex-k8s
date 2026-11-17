@@ -1,0 +1,22 @@
+# NetworkPolicy: gateway chỉ nhận traffic từ pod nginx (cổng 8080); pod khác trong cluster không gọi thẳng được.
+# Chỉ có tác dụng khi CNI enforce NetworkPolicy; kubelet probe và kubectl port-forward đi từ node nên không bị chặn.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: flex-api-gateway-allow-nginx
+  labels:
+    app: flex-api-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: flex-api-gateway
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: nginx
+      ports:
+        - protocol: TCP
+          port: 8080 # port của container (sau Service targetPort)

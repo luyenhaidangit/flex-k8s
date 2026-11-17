@@ -1,0 +1,14 @@
+# Service: địa chỉ ổn định + cân bằng tải cho các pod
+apiVersion: v1
+kind: Service
+metadata:
+  name: flex-api-gateway
+  labels:
+    app: flex-api-gateway
+spec:
+  type: ClusterIP # chỉ trong cluster; từ máy dùng kubectl port-forward
+  selector: # chọn pod theo label; lệch label -> Endpoints trống
+    app: flex-api-gateway
+  ports:
+    - port: 80 # port của Service
+      targetPort: 8080 # port của container

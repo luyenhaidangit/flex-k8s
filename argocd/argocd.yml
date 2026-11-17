@@ -12,7 +12,9 @@ spec:
   source:
     repoURL: https://github.com/luyenhaidangit/flex-k8s
     targetRevision: main
-    path: manifests # mặc định không đọc thư mục con
+    path: manifests
+    directory:
+      recurse: true # manifests/<app>/*.yaml nằm trong thư mục con; mặc định Argo CD không đọc thư mục con
   destination:
     server: https://kubernetes.default.svc # cluster chứa ArgoCD (k3s 1 node)
     namespace: default # khớp hiện trạng: nginx và flex-api-gateway đang ở default

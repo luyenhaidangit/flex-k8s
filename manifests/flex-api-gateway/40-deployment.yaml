@@ -1,33 +1,3 @@
-# ConfigMap: cấu hình không nhạy cảm, nạp vào container qua envFrom
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: flex-api-gateway-config
-  labels:
-    app: flex-api-gateway
-data:
-  ASPNETCORE_ENVIRONMENT: "Production"
-  Logging__LogLevel__Default: "Information"
-  Logging__LogLevel__Microsoft.AspNetCore: "Warning"
-  Logging__Sinks__Logstash: "false" # chưa có Logstash; 127.0.0.1:5000 trong pod không tồn tại
-  JwtSettings__Issuer: "luyenhaidangit"
-  JwtSettings__Audience: "flex"
----
-# Service: địa chỉ ổn định + cân bằng tải cho các pod
-apiVersion: v1
-kind: Service
-metadata:
-  name: flex-api-gateway
-  labels:
-    app: flex-api-gateway
-spec:
-  type: ClusterIP # chỉ trong cluster; từ máy dùng kubectl port-forward
-  selector: # chọn pod theo label; lệch label -> Endpoints trống
-    app: flex-api-gateway
-  ports:
-    - port: 80 # port của Service
-      targetPort: 8080 # port của container
----
 # Deployment: giữ N pod chạy, tự tạo lại khi chết, rolling update khi đổi image
 apiVersion: apps/v1
 kind: Deployment
@@ -98,26 +68,3 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 2
             failureThreshold: 3 # ~30s treo mới restart
----
-# NetworkPolicy: gateway chỉ nhận traffic từ pod nginx (cổng 8080); pod khác trong cluster không gọi thẳng được.
-# Chỉ có tác dụng khi CNI enforce NetworkPolicy; kubelet probe và kubectl port-forward đi từ node nên không bị chặn.
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: flex-api-gateway-allow-nginx
-  labels:
-    app: flex-api-gateway
-spec:
-  podSelector:
-    matchLabels:
-      app: flex-api-gateway
-  policyTypes:
-    - Ingress
-  ingress:
-    - from:
-        - podSelector:
-            matchLabels:
-              app: nginx
-      ports:
-        - protocol: TCP
-          port: 8080 # port của container (sau Service targetPort)
