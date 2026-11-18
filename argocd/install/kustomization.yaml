@@ -12,7 +12,7 @@ resources:
 
 patches:
   # UI/API chạy dưới path /argocd, HTTP thuần: TLS do Nginx (flex-environment) kết thúc.
-  # Nginx trong k8s (manifests/nginx/10-configmap.yaml, location /argocd) proxy tới Service argocd-server (ClusterIP, port 80);
+  # Nginx trong k8s (manifests/nginx/configmap.yaml, location /argocd) proxy tới Service argocd-server (ClusterIP, port 80);
   # Nginx Docker ngoài host đã chuyển mọi path vào nginx k8s qua NodePort 30080 nên không cần cấu hình riêng.
   - patch: |-
       apiVersion: v1

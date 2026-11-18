@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Sửa file trong manifests/ rồi chạy: apply toàn bộ manifest, service nào đổi thì chạy lại đúng service đó.
-# Mỗi app một thư mục manifests/<app>/, file đặt tên <số>-<kind>.yaml; apply theo thứ tự tên file (xem AGENTS.md).
+# Mỗi app một thư mục manifests/<app>/, file đặt tên <kind>.yaml; apply theo thứ tự chữ cái của tên file (xem AGENTS.md).
 # Cách dùng:
 #   bash restart.sh                      # apply mọi manifests/<app>/*.yaml
 #   bash restart.sh nginx                # chỉ apply manifests/nginx/

@@ -40,7 +40,7 @@ bash scripts/install-argocd.sh                 # apply install + chờ sẵn sà
 
 Patch của Flex: bản non-HA; UI chạy HTTP thuần dưới path `/argocd` (`server.insecure`, `server.rootpath`, `server.basehref`); Service `argocd-server` giữ ClusterIP; tắt dex, notifications và applicationset (`replicas: 0`) cho nhẹ node.
 
-Truy cập: `https://flex.luyenhaidangit.pro/argocd`. Đường đi: Nginx Docker (flex-environment, đã chuyển mọi path vào NodePort `30080`, không cần sửa) → Nginx trong k8s (`manifests/nginx/10-configmap.yaml`, `location /argocd`) → Service `argocd-server.argocd`. **Chỉ host `flex.luyenhaidangit.pro` được vào `/argocd`; `api.luyenhaidangit.pro` cũng đi vào cùng NodePort nhưng nginx k8s trả 404 theo `Host` (map `$argocd_allowed`). **Thứ tự:** cài Argo CD trước (`install-argocd.sh`), rồi mới `bash restart.sh nginx` để áp route; nginx k8s phân giải tên Service lúc khởi động, thiếu `argocd-server` thì pod nginx mới CrashLoop (rolling update giữ pod cũ phục vụ). Chưa qua Nginx thì dùng `kubectl -n argocd port-forward svc/argocd-server 8080:80` rồi mở `http://localhost:8080/argocd`.
+Truy cập: `https://flex.luyenhaidangit.pro/argocd`. Đường đi: Nginx Docker (flex-environment, đã chuyển mọi path vào NodePort `30080`, không cần sửa) → Nginx trong k8s (`manifests/nginx/configmap.yaml`, `location /argocd`) → Service `argocd-server.argocd`. **Chỉ host `flex.luyenhaidangit.pro` được vào `/argocd`; `api.luyenhaidangit.pro` cũng đi vào cùng NodePort nhưng nginx k8s trả 404 theo `Host` (map `$argocd_allowed`). **Thứ tự:** cài Argo CD trước (`install-argocd.sh`), rồi mới `bash restart.sh nginx` để áp route; nginx k8s phân giải tên Service lúc khởi động, thiếu `argocd-server` thì pod nginx mới CrashLoop (rolling update giữ pod cũ phục vụ). Chưa qua Nginx thì dùng `kubectl -n argocd port-forward svc/argocd-server 8080:80` rồi mở `http://localhost:8080/argocd`.
 
 Sau khi cài, một lần: lấy mật khẩu admin ban đầu (`kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d`), đăng nhập, đổi mật khẩu rồi xóa secret khởi tạo. Mật khẩu không nằm trong Git. CLI qua Nginx cần `argocd login flex.luyenhaidangit.pro --grpc-web --grpc-web-root-path /argocd`.
 
@@ -90,7 +90,7 @@ Lưu ý:
 
 ## Giới hạn truy cập gateway
 
-`manifests/flex-api-gateway/50-networkpolicy.yaml` có NetworkPolicy `flex-api-gateway-allow-nginx`: chỉ pod `app=nginx` trong namespace `default` được vào cổng 8080 của gateway. `kubectl port-forward` và probe vẫn dùng được. NetworkPolicy không lọc được traffic vào NodePort `30080` từ bên ngoài (nguồn bị SNAT thành IP node), phần đó vẫn do firewall host đảm nhiệm.
+`manifests/flex-api-gateway/networkpolicy.yaml` có NetworkPolicy `flex-api-gateway-allow-nginx`: chỉ pod `app=nginx` trong namespace `default` được vào cổng 8080 của gateway. `kubectl port-forward` và probe vẫn dùng được. NetworkPolicy không lọc được traffic vào NodePort `30080` từ bên ngoài (nguồn bị SNAT thành IP node), phần đó vẫn do firewall host đảm nhiệm.
 
 ## Chạy thử nginx của Flex
 
@@ -106,8 +106,8 @@ Rollback: `kubectl rollout undo deployment/nginx`. Dọn dẹp: `kubectl delete 
 
 ```text
 manifests/           # Manifest YAML thuần, mỗi app một thư mục, áp dụng bằng kubectl apply -f manifests/<app>/
-  nginx/             # <số>-<kind>.yaml: 10-configmap, 30-service, 40-deployment
-  flex-api-gateway/  # 10-configmap, 30-service, 40-deployment, 50-networkpolicy
+  nginx/             # <kind>.yaml: configmap, service, deployment
+  flex-api-gateway/  # configmap, service, deployment, networkpolicy
 scripts/             # Script vận hành (non-interactive, fail-fast)
 docs/                # Tài liệu setup và vận hành
 ```
