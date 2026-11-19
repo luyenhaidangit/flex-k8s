@@ -52,14 +52,19 @@ data:
             proxy_set_header X-Forwarded-Proto $forwarded_proto;
         }
 
+        # DNS của cluster (CoreDNS của k3s, ClusterIP mặc định), chỉ dùng cho /argocd bên dưới.
+        resolver 10.43.0.10 valid=30s ipv6=off;
+
         # Argo CD (namespace argocd): chuyển nguyên path /argocd, argocd-server chạy với server.rootpath=/argocd và HTTP thuần (server.insecure).
-        # Cùng lý do với /api/: proxy_pass viết trực tiếp, có dấu chấm cuối. Hệ quả: Service argocd-server phải tồn tại
-        # (cài Argo CD bằng scripts/install-argocd.sh) TRƯỚC khi nginx khởi động, nếu không nginx lỗi "host not found in upstream" và pod mới CrashLoop.
+        # Khác /api/: proxy_pass dùng biến nên nginx phân giải tên lúc có request, không phải lúc khởi động. Argo CD chưa cài (hoặc đang
+        # restart) thì chỉ /argocd trả 502, nginx vẫn chạy bình thường. Biến không kèm URI nên vẫn giữ nguyên path /argocd.
+        # Dấu chấm cuối là bắt buộc, cùng lý do với /api/ (resolver của nginx không dùng search domain nhưng giữ cho thống nhất).
         location /argocd {
             if ($argocd_allowed = 0) {
                 return 404;
             }
-            proxy_pass http://argocd-server.argocd.svc.cluster.local.;
+            set $argocd_upstream argocd-server.argocd.svc.cluster.local.;
+            proxy_pass http://$argocd_upstream;
             proxy_http_version 1.1;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
