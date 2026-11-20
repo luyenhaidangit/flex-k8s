@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Cài Argo CD vào cluster hiện tại bằng file khai báo trong argocd/install/ (Kustomize, đã pin version), rồi áp Application 'flex'.
 # Cách dùng:
-#   bash scripts/install-argocd.sh
+#   bash argocd/install-argocd.sh
 # Chạy lại nhiều lần an toàn (kubectl apply): đổi version hoặc patch trong argocd/install/ rồi chạy lại để nâng cấp.
 # - Cần kết nối được cluster; thay đổi cluster thật: namespace argocd, CRD, Deployment/StatefulSet của Argo CD, Application 'flex'.
 # - Không tạo/đổi mật khẩu admin: Argo CD tự sinh Secret argocd-initial-admin-secret, script chỉ in lệnh để lấy.
