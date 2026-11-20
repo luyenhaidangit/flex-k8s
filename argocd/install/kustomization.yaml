@@ -1,5 +1,5 @@
 # Cài Argo CD (bản non-HA, phù hợp k3s 1 node): install.yaml chính thức đã pin version + các vá riêng của Flex.
-# Chạy qua scripts/install-argocd.sh, hoặc thủ công: kubectl apply --server-side -k argocd/install
+# Chạy qua argocd/install-argocd.sh, hoặc thủ công: kubectl apply --server-side -k argocd/install
 # Nâng version: đổi tag v3.5.7 ở resources, xem release notes trước và thử bằng 'kubectl kustomize argocd/install'.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization

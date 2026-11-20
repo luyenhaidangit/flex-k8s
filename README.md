@@ -30,12 +30,13 @@ Argo CD cài vào namespace `argocd` của cluster k3s 1 node, khai báo hoàn t
 
 ```text
 argocd/install/          # Kustomize: namespace + install.yaml chính thức v3.5.7 + patch của Flex
+argocd/install-argocd.sh # script cài: apply install + chờ sẵn sàng + apply Application
 argocd/application.yaml  # Application 'flex' (đồng bộ manifests/, sync thủ công)
 ```
 
 ```bash
 kubectl kustomize argocd/install | head        # chỉ render, không đụng cluster (cần mạng để tải install.yaml)
-bash scripts/install-argocd.sh                 # apply install + chờ sẵn sàng + apply Application
+bash argocd/install-argocd.sh                  # apply install + chờ sẵn sàng + apply Application
 ```
 
 Patch của Flex: bản non-HA; UI chạy HTTP thuần dưới path `/argocd` (`server.insecure`, `server.rootpath`, `server.basehref`); Service `argocd-server` giữ ClusterIP; tắt dex, notifications và applicationset (`replicas: 0`) cho nhẹ node.
