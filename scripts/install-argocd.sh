@@ -29,8 +29,8 @@ for res in deployment/argocd-server deployment/argocd-repo-server deployment/arg
   fi
 done
 
-echo ">> apply argocd/argocd.yml (Application flex, sync thủ công)"
-kubectl apply -f argocd/argocd.yml
+echo ">> apply argocd/application.yaml (Application flex, sync thủ công)"
+kubectl apply -f argocd/application.yaml
 
 cat <<'EOF'
 >> Xong. Việc cần làm một lần sau khi cài:
