@@ -1,5 +1,5 @@
 # Application của ArgoCD: đồng bộ thư mục manifests/ của repo này vào cluster (YAML thuần, không Helm/Kustomize).
-# Áp dụng một lần (sau khi đã cài ArgoCD vào namespace argocd): kubectl apply -n argocd -f argocd/argocd.yml
+# Áp dụng một lần (sau khi đã cài ArgoCD vào namespace argocd): kubectl apply -n argocd -f argocd/application.yaml
 # Nằm ngoài manifests/ để Application không tự đồng bộ chính nó và restart.sh không apply file này.
 apiVersion: argoproj.io/v1alpha1
 kind: Application

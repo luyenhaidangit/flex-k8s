@@ -29,8 +29,8 @@ Chỉ đọc, không thay đổi cluster.
 Argo CD cài vào namespace `argocd` của cluster k3s 1 node, khai báo hoàn toàn bằng file (không tạo namespace hay sửa cấu hình bằng tay):
 
 ```text
-argocd/install/    # Kustomize: namespace + install.yaml chính thức v3.5.7 + patch của Flex
-argocd/argocd.yml  # Application 'flex' (đồng bộ manifests/, sync thủ công)
+argocd/install/          # Kustomize: namespace + install.yaml chính thức v3.5.7 + patch của Flex
+argocd/application.yaml  # Application 'flex' (đồng bộ manifests/, sync thủ công)
 ```
 
 ```bash
