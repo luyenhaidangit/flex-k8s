@@ -118,7 +118,7 @@ docs/                # Tài liệu setup và vận hành
 - Image luôn pin version/digest cụ thể, không dùng `latest`.
 - Không commit secret, kubeconfig hay credential thật; dùng `.env.example` làm mẫu.
 - Mỗi thay đổi cluster phải có kế hoạch rollback trước khi áp dụng.
-- Mọi Deployment khai báo `revisionHistoryLimit` rõ ràng (hiện là `3`), không dùng mặc định 10.
+- Mọi Deployment khai báo `revisionHistoryLimit` rõ ràng (hiện là `2`), không dùng mặc định 10.
 
 ## Bài học kinh nghiệm
 
