@@ -24,6 +24,18 @@ patches:
         server.rootpath: "/argocd"
         server.basehref: "/argocd"
 
+  # DNS: VPS có search domain bkcloud.vn với wildcard *.bkcloud.vn. Pod mặc định ndots:5 nên 'github.com' bị ghép
+  # thành github.com.bkcloud.vn (IP sai 103.48.81.200) -> repo-server không tới được GitHub, Application bị Sync Unknown.
+  # ndots:1 làm tên có dấu chấm (github.com) được resolve trực tiếp trước. Chỉ repo-server cần ra internet.
+  - target: { kind: Deployment, name: argocd-repo-server }
+    patch: |-
+      - op: add
+        path: /spec/template/spec/dnsConfig
+        value:
+          options:
+            - name: ndots
+              value: "1"
+
   # Tiết kiệm tài nguyên cho node duy nhất: tắt thành phần Flex chưa dùng.
   # Bật lại: đổi replicas về 1 (dex khi cần SSO, notifications khi cần thông báo, applicationset khi có nhiều Application).
   - target: { kind: Deployment, name: argocd-dex-server }
