@@ -118,6 +118,18 @@ docs/                # Tài liệu setup và vận hành
 - Image luôn pin version/digest cụ thể, không dùng `latest`.
 - Không commit secret, kubeconfig hay credential thật; dùng `.env.example` làm mẫu.
 - Mỗi thay đổi cluster phải có kế hoạch rollback trước khi áp dụng.
+- Mọi Deployment khai báo `revisionHistoryLimit` rõ ràng (hiện là `3`), không dùng mặc định 10.
+
+## Bài học kinh nghiệm
+
+### Cây Argo CD hiện quá nhiều ReplicaSet (nginx có 8 `rs`, chỉ 1 cái chạy pod)
+
+- **Hiện tượng:** Deployment `nginx` hiện nhiều ReplicaSet tên `nginx-<hash>`, chỉ 1 cái có pod, các cái còn lại 0 pod.
+- **Nguyên nhân:** mỗi lần đổi `spec.template` (image, env, resources, probe, label/annotation trong template, `kubectl rollout restart`) Deployment tạo ReplicaSet mới, giữ ReplicaSet cũ để rollback. Số lượng giữ tối đa là `spec.revisionHistoryLimit`, mặc định 10. Đây là hành vi bình thường, không phải lỗi.
+- **Không tạo RS mới:** đổi `replicas`, đổi metadata của chính Deployment, đổi `strategy`/`revisionHistoryLimit`. Đổi ngược về cấu hình cũ thì dùng lại RS cũ (cùng hash).
+- **Cách xử lý:** đặt `revisionHistoryLimit` trong manifest rồi sync; K8s tự xoá RS cũ vượt giới hạn. Không xoá RS bằng tay trên Argo CD.
+- **Giá trị khuyến nghị:** dev/test `2`, staging `3`, prod `3–5`. Không đặt `0` vì mất `kubectl rollout undo`. Quá cao (≥10) làm rối cây và tốn object trong etcd. Rollback thật sự nên là `git revert` + sync, nên không cần giữ lịch sử dài ở cluster.
+- **Kiểm tra:** `kubectl rollout history deployment/nginx` (thêm `--revision=N` để xem chi tiết). Nếu RS tăng dù không sửa gì, tìm annotation tự đổi mỗi lần render (`checksum/config`, timestamp) trong template.
 
 ## Việc cần quyết định tiếp
 

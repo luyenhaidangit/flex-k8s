@@ -7,6 +7,7 @@ metadata:
     app: flex-api-gateway
 spec:
   replicas: 1 # học/test, chưa có người dùng; tăng sau khi đo bằng kubectl top
+  revisionHistoryLimit: 3 # chỉ giữ 3 ReplicaSet cũ để rollback (mặc định 10 làm rối cây Argo CD); không đặt 0 vì mất rollout undo
   # Tìm pod theo label; phải khớp template.metadata.labels
   selector:
     matchLabels:
